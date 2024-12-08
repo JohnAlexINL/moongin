@@ -1,0 +1,1 @@
+sudo apt-get install libsdl2-dev libsdl-image* libsdl-mixer* libsdl2-ttf-dev liblua5.4-dev

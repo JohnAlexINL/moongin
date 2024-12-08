@@ -1,0 +1,3 @@
+mkdir -p output
+clang -o ./output/moongin.brew ./src/moongin_brew.c --static
+clang -o ./output/moongin ./src/moongin.c -lSDL2 -lSDL2_ttf -LSDL2_image -llua5.4 --static
