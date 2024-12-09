@@ -1,3 +1,8 @@
 mkdir -p output
+# build our makeshift xxd and use it to convert the injectable main function into a c-string
+clang -o ./output/moongin.xxd ./helpers/moongin_xxd.c
+./output/moongin.xxd
+# then actually build the "brewer"
 clang -o ./output/moongin.brew ./src/moongin_brew.c --static
-clang -o ./output/moongin ./src/moongin.c -lSDL2 -lSDL2_ttf -LSDL2_image -llua5.4 --static
+# and test it out on some example lua code
+./output/moongin.brew ./helpers/main.lua xlinux

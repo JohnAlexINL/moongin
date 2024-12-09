@@ -1,0 +1,5 @@
+#define program$ "Moongin"
+#define version$ "0.0.0"
+#define byline$ "Modula.dev"
+#define vhead$ program$ " " version$ ", " byline$ "\n"
+#define help$ vhead$ "    usage: moongin {main.lua} [-c compiler-binary] [platforms]\n    - xlinux\n    - xwin\n    - xmac\n\n    - armmac\n    - armlinux\n"

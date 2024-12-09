@@ -1,0 +1,1 @@
+int glua_int=0;

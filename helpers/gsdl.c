@@ -1,0 +1,1 @@
+int gsdl_int=0;
