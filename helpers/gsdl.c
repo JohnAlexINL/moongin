@@ -24,6 +24,6 @@ SDL_Window* gsdl_windowNew(const char *title, int width, int height) {
     }   return window;
 }
 
-void gsdl_windowClean(SDL_Window *window) {
+void gsdl_windowDestroy(SDL_Window *window) {
     if (window) { SDL_DestroyWindow(window); }
 }
