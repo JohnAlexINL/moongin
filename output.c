@@ -155,21 +155,37 @@ SDL_Texture *gsdl_loadTexture(SDL_Renderer *renderer, const char *filename) {
 #include <lua5.4/lualib.h>
 #include <lua5.4/lauxlib.h>
 
-const char sdls_index_out_of_range[] = "%s index out of range";
-const char sdls_index_destroyed[] = "%s cannot reuse destroyed instance";
-const char sdls_expect_int_1[] = "%s expected integer as argument 1";
-const char sdls_expect_int_2[] = "%s expected integer as argument 2";
-const char sdls_expect_int_3[] = "%s expected integer as argument 3";
-const char sdls_expect_string_1[] = "%s expected string as argument 1";
-const char sdls_expect_string_2[] = "%s expected string as argument 2";
-const char sdls_expect_string_3[] = "%s expected string as argument 3";
-const char sdls_wrong_type_1[] = "%s given id for wrong data type";
-const char sdls_wrong_type_2[] = "%s given id for wrong data type";
-const char sdls_wrong_type_3[] = "%s given id for wrong data type";
-const char sdls_invalid_id[] = "%s given invalid id";
+const char sdls_index_out_of_range[] = "%s (arg %d) index out of range";
+const char sdls_index_destroyed[] = "%s (arg %d) cannot reuse destroyed instance";
+const char sdls_expect_int[] = "%s (arg %d) expected integer";
+const char sdls_expect_string[] = "%s (arg %d) expected string";
+const char sdls_wrong_type[] = "%s (arg %d) wrong data type";
+const char sdls_invalid_id[] = "%s (arg %d) given invalid id";
+const char sdls_unable_file[] = "%s (arg %d) returned NULL, check that the file exists and is readable";
 
 char pushfmtstr[255];
-void glua_error(lua_State *context, const char *fmt, char *src){ sprintf(pushfmtstr, fmt, src); lua_pushstring(context, pushfmtstr); lua_error(context); }
+#define RET_ERR return 1
+void glua_error(lua_State *context, const char *fmt, const char *src, int arg) { sprintf(pushfmtstr, fmt, src, arg); lua_pushstring(context, pushfmtstr); lua_error(context); }
+
+int glua_getInt(lua_State *context, char *func, int arg) {
+    if (!lua_isinteger(context, -1)) {
+        glua_error(context, sdls_expect_int, func, arg); 
+        RET_ERR;
+    }
+    int value = lua_tointeger(context, -1);
+    lua_pop(context, 1);  // Remove the top of the stack
+    return value;
+}
+
+const char *glua_getString(lua_State *context, char *func, int arg) {
+    if (!lua_isstring(context, -1)) {
+        glua_error(context, sdls_expect_string, func, arg);
+        return NULL;
+    }
+    const char *value = lua_tostring(context, -1);
+    lua_pop(context, 1);  // Remove the top of the stack
+    return value;
+}
 
 list_t *glua_windows;       int tag_windows = 0;
 list_t *glua_renderers;     int tag_renderers = 1;
@@ -177,76 +193,82 @@ list_t *glua_textures;      int tag_textures = 2;
 
 int glua_byterun(lua_State *context, const char *bytecode, int bytecode_size) {
     if (luaL_loadbuffer(context, bytecode, bytecode_size, "chunk") != LUA_OK) {
-        printf("Error loading main function: %s\n", lua_tostring(context, -1));
+        printf("Error loading Lua module: %s\n", lua_tostring(context, -1));
         return ERROR;
     }
     if (lua_pcall(context, 0, LUA_MULTRET, 0) != LUA_OK) {
-        printf("Error running main function: %s\n", lua_tostring(context, -1));
+        printf("Error in Lua runtime: %s\n", lua_tostring(context, -1));
         return ERROR;
     }
     return OK;
 }
 
 int glua_newWindow(lua_State *context){
-    if (!lua_isstring(context, 1))  { glua_error(context, sdls_expect_string_1, "sdl_newWindow"); return ERROR; }
-    if (!lua_isnumber(context, 2)) { glua_error(context, sdls_expect_int_2, "sdl_newWindow"); return ERROR; }
-    if (!lua_isnumber(context, 3)) { glua_error(context, sdls_expect_int_3, "sdl_newWindow"); return ERROR; }
-    const char *title = lua_tostring(context, 1);
-    int width = lua_tointeger(context, 2);
-    int height = lua_tointeger(context, 3);
+    int height = glua_getInt(context, "core.newWindow", 3);
+    int width = glua_getInt(context, "core.newWindow", 2);
+    const char *title = glua_getString(context, "core.newWindow", 1);
+    if ( title == NULL | width == ERROR | height == ERROR ) { RET_ERR; }
     SDL_Window *result = gsdl_windowNew(title, width, height);
     list_add(glua_windows, (void*)result);
-    int id = item_newId(tag_windows, glua_windows->entries-1); // eventually, replace this with a windowID instead
-    lua_pushinteger(context, id);
-    return 1; // return # of args returned to stack
+    lua_pushinteger(context, item_newId(tag_windows, glua_windows->entries-1));
+    return 1;
 }
 
 int glua_newRenderer(lua_State *context) {
-    if (!lua_isnumber(context, 1)) { glua_error(context, sdls_expect_int_1, "sdl_newRenderer"); return ERROR; }
-    if (!lua_isnumber(context, 2)) { glua_error(context, sdls_expect_int_2, "sdl_newRenderer"); return ERROR; }
-    int index = lua_tointeger(context, 1);
-    int flags = lua_tointeger(context, 2);
-    if ( item_isType(tag_windows, index) == false ) { glua_error(context, sdls_wrong_type_1, "sdl_newRenderer"); return ERROR; }
+    int flags = glua_getInt(context, "core.newWindow", 2); if ( flags == ERROR ) { RET_ERR; }
+    int index = glua_getInt(context, "core.newWindow", 1); if ( index == ERROR ) { RET_ERR; }
+    if ( item_isType(tag_windows, index) == false ) { glua_error(context, sdls_wrong_type, "sdl_newRenderer", 1); }
     SDL_Window *ref = item_byInt(index);
-    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_newRenderer"); return ERROR; }
+    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_newRenderer", 1); RET_ERR; }
     SDL_Renderer *result = gsdl_newRenderer(ref, flags);
     list_add(glua_renderers, (void*)result);
-    int id = item_newId(tag_renderers, glua_renderers->entries-1);
-    lua_pushinteger(context, id);
-    return 1; // return # of args returned to stack
+    lua_pushinteger(context, item_newId(tag_renderers, glua_renderers->entries-1));
+    return 1;
 }
 
 int glua_destroyWindow(lua_State *context) {
-    if (!lua_isinteger(context, 1))  { glua_error(context, sdls_expect_int_1, "sdl_destroyWindow"); return ERROR; }
-    int id = lua_tointeger(context, 1);
-    if ( item_isType(tag_windows, id) == false ) { glua_error(context, sdls_wrong_type_1, "sdl_destroyWindow"); return ERROR; }
+    int id = glua_getInt(context, "core.destroyWindow", 1); if ( id == ERROR ) { RET_ERR; }
+    if ( item_isType(tag_windows, id) == false ) { glua_error(context, sdls_wrong_type, "sdl_destroyWindow", 1); RET_ERR; }
     SDL_Window *ref = (SDL_Window*)item_byInt(id);
-    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_destroyWindow"); return ERROR; }
+    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_destroyWindow", 1); RET_ERR; }
     gsdl_windowDestroy(ref);
     return OK; // no arguments returned
 }
 
 int glua_destroyRenderer(lua_State *context) {
-    if (!lua_isinteger(context, 1)) { glua_error(context, sdls_expect_int_1, "sdl_destroyRenderer"); return ERROR; }
-    int id = lua_tointeger(context, 1);
-    if ( item_isType(tag_renderers, id) == false) { glua_error(context, sdls_wrong_type_1, "sdl_destroyRenderer"); return ERROR; }
+    int id = glua_getInt(context, "core.destroyRenderer", 1); if ( id == ERROR ) { RET_ERR; }
+    if ( item_isType(tag_renderers, id) == false) { glua_error(context, sdls_wrong_type, "sdl_destroyRenderer", 1); RET_ERR; }
     SDL_Renderer *ref = (SDL_Renderer*)item_byInt(id);
-    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_destroyRenderer"); return ERROR; }
+    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "core.destroyRenderer", 1); RET_ERR; }
     gsdl_rendererDestroy(ref);
     return OK;
 }
 
-// TODO: setColor, clear, pollEvent, delay
-
 int glua_loadTexture(lua_State *context) {
-    if (!lua_isinteger(context, 1))  { glua_error(context, sdls_expect_int_1, "sdl_loadTexture"); return ERROR; }
-    if (!lua_isstring(context, 2))  { glua_error(context, sdls_expect_string_2, "sdl_loadTexture"); return ERROR; }
-    int index = lua_tointeger(context, 1);
-    if (index >= glua_windows->entries) { glua_error(context, sdls_index_out_of_range, "sdl_loadTexture"); return ERROR; }
-    if (glua_windows->item[index] == NULL) { glua_error(context, sdls_index_destroyed, "sdl_loadTexture"); return ERROR; }
-    SDL_Window *ref = glua_windows->item[index];
-    const char *filename = lua_tostring(context, 2);
-    return 1; // TODO: return texture id
+    const char *filename = glua_getString(context, "core.loadTexture", 2); if ( filename == NULL ) { RET_ERR; }
+    int id = glua_getInt(context, "core.loadTexture", 1); if ( id == ERROR ) { RET_ERR; }
+    if (item_isType(tag_renderers, id) == false) { glua_error(context, sdls_wrong_type, "sdl_loadTexture", 1); RET_ERR; }
+    SDL_Renderer *ref = (SDL_Renderer*)item_byInt(id);
+    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "sdl_loadTexture", 1); RET_ERR; }
+    SDL_Texture *result = gsdl_loadTexture(ref, filename);
+    if ( result == NULL ) { glua_error(context, sdls_unable_file, "sdl_loadTexture", 2); RET_ERR; }
+    list_add(glua_textures, (void*)result);
+    lua_pushinteger(context, item_newId(tag_textures, glua_textures->entries-1));
+    return 1;
+}
+
+// TODO: setColor, clear, pollEvent, delay
+int glua_setColor(lua_State *context) {
+    int alpha = glua_getInt(context, "core.setColor", 4);   if ( alpha == ERROR ) { RET_ERR; }
+    int blue = glua_getInt(context, "core.setColor", 3);    if ( blue == ERROR ) { RET_ERR; }
+    int green = glua_getInt(context, "core.setColor", 2);   if ( green == ERROR ) { RET_ERR; }
+    int red = glua_getInt(context, "core.setColor", 1);     if ( red == ERROR ) { RET_ERR; }
+    int id = glua_getInt(context, "core.setColor", 1);      if ( id == ERROR ) { RET_ERR; }
+    if (item_isType(tag_renderers, id) == false) { glua_error(context, sdls_wrong_type, "core.setColor", 1); RET_ERR; }
+    SDL_Renderer *ref = (SDL_Renderer*)item_byInt(id);
+    if ( ref == NULL ) { glua_error(context, sdls_invalid_id, "core.setColor", 1); RET_ERR; }
+    lua_pushinteger(context, gsdl_setColor(ref, red, green, blue, alpha));
+    return 1;
 }
 
 lua_State *glua_initFunctions() {
@@ -278,6 +300,10 @@ lua_State *glua_initFunctions() {
         lua_setfield(globalState, -2, "newRenderer");
         lua_pushcfunction(globalState, glua_destroyRenderer);
         lua_setfield(globalState, -2, "destroyRenderer");
+        lua_pushcfunction(globalState, glua_loadTexture);
+        lua_setfield(globalState, -2, "loadTexture");
+        lua_pushcfunction(globalState, glua_setColor);
+        lua_setfield(globalState, -2, "setColor");
     // Pop the 'core' table off the stack
         lua_pop(globalState, 1); 
     return globalState;
@@ -287,29 +313,37 @@ char lua_entry[] = {
     0x1b,0x4c,0x75,0x61,0x54,0x00,0x19,0x93,0x0d,0x0a,0x1a,0x0a,0x04,0x08,0x08,0x78,
     0x56,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x28,0x77,0x40,0x01,
     0x94,0x40,0x2e,0x2f,0x68,0x65,0x6c,0x70,0x65,0x72,0x73,0x2f,0x6d,0x61,0x69,0x6e,
-    0x2e,0x6c,0x75,0x61,0x80,0x80,0x00,0x01,0x06,0xa3,0x51,0x00,0x00,0x00,0x0b,0x00,
+    0x2e,0x6c,0x75,0x61,0x80,0x80,0x00,0x01,0x07,0xaf,0x51,0x00,0x00,0x00,0x0b,0x00,
     0x00,0x00,0x0e,0x00,0x00,0x01,0x83,0x00,0x01,0x00,0x01,0x81,0x8f,0x81,0x81,0x81,
     0x2b,0x81,0x44,0x00,0x04,0x02,0x8b,0x00,0x00,0x03,0x0b,0x01,0x00,0x04,0x0e,0x01,
     0x02,0x05,0x83,0x01,0x03,0x00,0x00,0x02,0x00,0x00,0x44,0x01,0x03,0x00,0xc4,0x00,
     0x00,0x01,0x8b,0x00,0x00,0x00,0x8e,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x81,0x81,
     0xff,0x7f,0xc4,0x00,0x03,0x02,0x0b,0x01,0x00,0x03,0x8b,0x01,0x00,0x04,0x8e,0x01,
     0x03,0x05,0x03,0x02,0x04,0x00,0x80,0x02,0x01,0x00,0xc4,0x01,0x03,0x00,0x44,0x01,
-    0x00,0x01,0x0b,0x01,0x00,0x00,0x0e,0x01,0x02,0x09,0x80,0x01,0x01,0x00,0x44,0x01,
-    0x02,0x01,0x0b,0x01,0x00,0x00,0x0e,0x01,0x02,0x0a,0x80,0x01,0x00,0x00,0x44,0x01,
-    0x02,0x01,0x46,0x01,0x01,0x01,0x8b,0x04,0x85,0x63,0x6f,0x72,0x65,0x04,0x8a,0x6e,
+    0x00,0x01,0x0b,0x01,0x00,0x00,0x0e,0x01,0x02,0x09,0x80,0x01,0x01,0x00,0x03,0x02,
+    0x05,0x00,0x44,0x01,0x03,0x02,0x8b,0x01,0x00,0x03,0x0b,0x02,0x00,0x04,0x0e,0x02,
+    0x04,0x05,0x83,0x82,0x05,0x00,0x00,0x03,0x02,0x00,0x44,0x02,0x03,0x00,0xc4,0x01,
+    0x00,0x01,0x8b,0x01,0x00,0x00,0x8e,0x01,0x03,0x0c,0x00,0x02,0x01,0x00,0xc4,0x01,
+    0x02,0x01,0x8b,0x01,0x00,0x00,0x8e,0x01,0x03,0x0d,0x00,0x02,0x00,0x00,0xc4,0x01,
+    0x02,0x01,0xc6,0x01,0x01,0x01,0x8e,0x04,0x85,0x63,0x6f,0x72,0x65,0x04,0x8a,0x6e,
     0x65,0x77,0x57,0x69,0x6e,0x64,0x6f,0x77,0x04,0x8c,0x54,0x65,0x73,0x74,0x20,0x57,
     0x69,0x6e,0x64,0x6f,0x77,0x04,0x86,0x70,0x72,0x69,0x6e,0x74,0x04,0x87,0x73,0x74,
     0x72,0x69,0x6e,0x67,0x04,0x87,0x66,0x6f,0x72,0x6d,0x61,0x74,0x04,0x92,0x4e,0x65,
     0x77,0x20,0x77,0x69,0x6e,0x64,0x6f,0x77,0x3a,0x20,0x09,0x25,0x30,0x38,0x78,0x04,
     0x8c,0x6e,0x65,0x77,0x52,0x65,0x6e,0x64,0x65,0x72,0x65,0x72,0x04,0x94,0x4e,0x65,
     0x77,0x20,0x72,0x65,0x6e,0x64,0x65,0x72,0x65,0x72,0x3a,0x20,0x09,0x25,0x30,0x38,
-    0x78,0x04,0x90,0x64,0x65,0x73,0x74,0x72,0x6f,0x79,0x52,0x65,0x6e,0x64,0x65,0x72,
-    0x65,0x72,0x04,0x8e,0x64,0x65,0x73,0x74,0x72,0x6f,0x79,0x57,0x69,0x6e,0x64,0x6f,
-    0x77,0x81,0x01,0x00,0x00,0x80,0xa3,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x01,0x00,
-    0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
-    0x00,0x01,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x80,0x82,0x87,0x77,0x69,0x6e,
-    0x64,0x6f,0x77,0x87,0xa3,0x89,0x72,0x65,0x6e,0x64,0x65,0x72,0x65,0x72,0x93,0xa3,
-    0x81,0x85,0x5f,0x45,0x4e,0x56,0x00
+    0x78,0x04,0x8c,0x6c,0x6f,0x61,0x64,0x54,0x65,0x78,0x74,0x75,0x72,0x65,0x04,0x92,
+    0x2e,0x2f,0x61,0x73,0x73,0x65,0x74,0x73,0x2f,0x64,0x75,0x63,0x6b,0x2e,0x70,0x6e,
+    0x67,0x04,0x94,0x44,0x75,0x63,0x6b,0x20,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x3a,
+    0x20,0x09,0x25,0x30,0x38,0x78,0x04,0x90,0x64,0x65,0x73,0x74,0x72,0x6f,0x79,0x52,
+    0x65,0x6e,0x64,0x65,0x72,0x65,0x72,0x04,0x8e,0x64,0x65,0x73,0x74,0x72,0x6f,0x79,
+    0x57,0x69,0x6e,0x64,0x6f,0x77,0x81,0x01,0x00,0x00,0x80,0xaf,0x01,0x01,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x80,0x83,0x87,0x77,0x69,
+    0x6e,0x64,0x6f,0x77,0x87,0xaf,0x89,0x72,0x65,0x6e,0x64,0x65,0x72,0x65,0x72,0x93,
+    0xaf,0x88,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x9f,0xaf,0x81,0x85,0x5f,0x45,0x4e,
+    0x56,0x00
 };
 
 
