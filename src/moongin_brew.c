@@ -11,11 +11,11 @@
 #include "gsdl.h"
 #include "glua.h"
 
-const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o x86windows.exe output.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 --static";
-const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o x86linux.elf output.c -lm -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 --static";
-const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o x86mac.app output.c -lm -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 --static";
-const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o ARMmac.app output.c -lm -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 --static";
-const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o ARMlinux.elf output.c -lm -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 --static";
+const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o x86windows.exe output.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o x86linux.elf output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o x86mac.app output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o ARMmac.app output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o ARMlinux.elf output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
 
 int sysync(const char *command) {
     printf("    ... running %s\n", command);
@@ -35,7 +35,7 @@ char *xxout(int size, char *name, char *content) {
     const char nline[] = "\n    ";
     const char headFmt[] = "char %s[] = {\n    ";
     const char hexFmt[] = "0x%02x,";
-    char *result = malloc((sizeof(char)*size)*8 + 36);
+    char *result = malloc(maxFilesize*8 + 36);
     sprintf(result, headFmt, name);
     int i; int p=strlen(result);
     for(i=0;i<size;i++) {
@@ -90,9 +90,9 @@ int main(int argc, char **argv) {
     char *xxd = xxout(size, "lua_entry", mainfile);
 
     /* Then make a *.c which injects the bytecode */
-    char *mainc = malloc((sizeof(char)*size)*8 + 255);
+    char *mainc = malloc(maxFilesize*8 + 255);
     sprintf(mainc, moongin_frame, moongin_gsdl, moongin_glua, xxd);
-    file_write("./output.c", mainc, (sizeof(char)*size)*8 + 255);
+    file_write("./output.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
 
     /* finish up by compiling it for each platform */
     for(i=0;i<platnum;i++) {
