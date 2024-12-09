@@ -28,10 +28,18 @@ int glua_newWindow(lua_State *context){
     return glua_windows->entries; // eventually, replace this with a windowID instead
 }
 
-lua_State *glua_initFunctions(){
+lua_State *glua_initFunctions() {
     glua_windows = list_new(8);
     lua_State *globalState = luaL_newstate();
     luaL_openlibs(globalState);
-    lua_register(globalState, "gfx_newWindow", glua_newWindow);
+    // Create the 'core' table and push it on the stack
+        lua_newtable(globalState); 
+        lua_setglobal(globalState, "core");
+        lua_getglobal(globalState, "core");  
+    // Register functions by pushing to the stack and then setting table fields as pointers
+        lua_pushcfunction(globalState, glua_newWindow);  // Push the C function
+        lua_setfield(globalState, -2, "newWindow");  // Set it as core.newWindow
+    // Pop the 'core' table off the stack
+        lua_pop(globalState, 1); 
     return globalState;
 }
