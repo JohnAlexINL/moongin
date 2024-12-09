@@ -6,6 +6,8 @@
 #define ERROR -1
 // include "list.c"
 %s
+// include "item.c"
+%s
 // include "gsdl.c"
 %s
 // include "glua.c"

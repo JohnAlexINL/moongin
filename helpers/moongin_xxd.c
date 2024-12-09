@@ -35,5 +35,6 @@ int main(int argc, char **argv) {
     binout("moongin_list", "./helpers/list.c", "./src/list.h");
     binout("moongin_gsdl", "./helpers/gsdl.c", "./src/gsdl.h");
     binout("moongin_glua", "./helpers/glua.c", "./src/glua.h");
+    binout("moongin_item", "./helpers/item.c", "./src/item.h");
     return 0;
 }

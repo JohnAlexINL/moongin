@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 int initialize_SDL() {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -24,6 +25,27 @@ SDL_Window* gsdl_windowNew(const char *title, int width, int height) {
     }   return window;
 }
 
+SDL_Renderer *gsdl_newRenderer(SDL_Window *parentWindow, int rendererFlags){
+    SDL_Renderer *renderer = SDL_CreateRenderer(parentWindow, -1, rendererFlags);
+    if (!renderer) { printf("SDL_CreateRenderer error: %s\n", SDL_GetError()); SDL_Quit(); return NULL; }
+    return renderer;
+}
+
 void gsdl_windowDestroy(SDL_Window *window) {
     if (window) { SDL_DestroyWindow(window); }
+}
+
+void gsdl_rendererDestroy(SDL_Renderer *renderer) {
+    if (renderer) { SDL_DestroyRenderer(renderer); }
+}
+
+bool gsdl_setColor(SDL_Renderer *renderer, char red, char green, char blue, char alpha) { return SDL_SetRenderDrawColor(renderer, red, green, blue, alpha); }
+bool gsdl_clear(SDL_Renderer *renderer) { return SDL_RenderClear(renderer); }
+bool gsdl_pollEvent(SDL_Event *event) { return SDL_PollEvent(event); }
+void gsdl_delay(int milliseconds) { SDL_Delay(milliseconds); }
+
+SDL_Texture *gsdl_loadTexture(SDL_Renderer *renderer, const char *filename) { 
+    SDL_Texture *ref = IMG_LoadTexture(renderer, filename);
+    if ( ref == NULL ) { printf("SDL_loadTexture error: %s\n", SDL_GetError()); return NULL; } // don't quit; we can recover from these types of errors
+    return ref;
 }
