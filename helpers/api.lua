@@ -19,3 +19,7 @@ core.destroyRenderer = function(id) end
 -- @param blue number
 -- @param alpha number
 core.setColor = function(id, red, green, blue, alpha) end
+-- @param id number
+core.clear = function(id) end
+-- @param milliseconds number
+core.delay = function(milliseconds) end

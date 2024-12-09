@@ -40,7 +40,7 @@ void gsdl_rendererDestroy(SDL_Renderer *renderer) {
 }
 
 bool gsdl_setColor(SDL_Renderer *renderer, char red, char green, char blue, char alpha) { return SDL_SetRenderDrawColor(renderer, red, green, blue, alpha); }
-bool gsdl_clear(SDL_Renderer *renderer) { return SDL_RenderClear(renderer); }
+void gsdl_clear(SDL_Renderer *renderer) { SDL_RenderClear(renderer); SDL_RenderPresent(renderer); }
 bool gsdl_pollEvent(SDL_Event *event) { return SDL_PollEvent(event); }
 void gsdl_delay(int milliseconds) { SDL_Delay(milliseconds); }
 

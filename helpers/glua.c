@@ -104,7 +104,6 @@ int glua_loadTexture(lua_State *context) {
     return 1;
 }
 
-// TODO: setColor, clear, pollEvent, delay
 int glua_setColor(lua_State *context) {
     int alpha = glua_getInt(context, "core.setColor", 4);   if ( alpha == ERROR ) { RET_ERR; }
     int blue = glua_getInt(context, "core.setColor", 3);    if ( blue == ERROR ) { RET_ERR; }
@@ -117,6 +116,22 @@ int glua_setColor(lua_State *context) {
     lua_pushinteger(context, gsdl_setColor(ref, red, green, blue, alpha));
     return 1;
 }
+
+int glua_clear(lua_State *context){
+    int id = glua_getInt(context, "core.clear", 1); if ( id == ERROR ) { RET_ERR; }
+    if (item_isType(tag_renderers, id) == false) { glua_error(context, sdls_wrong_type, "core.clear", 1); RET_ERR; }
+    SDL_Renderer *ref = (SDL_Renderer*)item_byInt(id);
+    gsdl_clear(ref);
+    return OK;
+}
+
+int glua_delay(lua_State *context) {
+    int ms = glua_getInt(context, "core.delay", 1); if ( ms == ERROR ) { RET_ERR; }
+    gsdl_delay(ms);
+    return OK;
+}
+
+// TODO: pollEvent
 
 lua_State *glua_initFunctions() {
     // Push our data types to the global item table
@@ -151,6 +166,10 @@ lua_State *glua_initFunctions() {
         lua_setfield(globalState, -2, "loadTexture");
         lua_pushcfunction(globalState, glua_setColor);
         lua_setfield(globalState, -2, "setColor");
+        lua_pushcfunction(globalState, glua_clear);
+        lua_setfield(globalState, -2, "clear");
+        lua_pushcfunction(globalState, glua_delay);
+        lua_setfield(globalState, -2, "delay");
     // Pop the 'core' table off the stack
         lua_pop(globalState, 1); 
     return globalState;
