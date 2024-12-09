@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "file.c"
+#include "list.h"
 #include "strings.h"
 #include "moongin.h"
 #include "gsdl.h"
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
 
     /* Then make a *.c which injects the bytecode */
     char *mainc = malloc(maxFilesize*8 + 255);
-    sprintf(mainc, moongin_frame, moongin_gsdl, moongin_glua, xxd);
+    sprintf(mainc, moongin_frame, moongin_list, moongin_gsdl, moongin_glua, xxd);
     file_write("./output.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
 
     /* finish up by compiling it for each platform */
@@ -111,5 +112,5 @@ int main(int argc, char **argv) {
 
     /* clean up the generated build.luac and output.c */
     file_delete("build.luac");
-    file_delete("output.c");
+    // file_delete("output.c");
 }

@@ -32,6 +32,7 @@ int binout(char *name, char *input, char *output) {
 
 int main(int argc, char **argv) {
     binout("moongin_frame", "./helpers/moongin.c", "./src/moongin.h");
+    binout("moongin_list", "./helpers/list.c", "./src/list.h");
     binout("moongin_gsdl", "./helpers/gsdl.c", "./src/gsdl.h");
     binout("moongin_glua", "./helpers/glua.c", "./src/glua.h");
     return 0;
