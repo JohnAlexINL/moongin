@@ -32,6 +32,6 @@ lua_State *glua_initFunctions(){
     glua_windows = list_new(8);
     lua_State *globalState = luaL_newstate();
     luaL_openlibs(globalState);
-    lua_register(globalState, "sdl_newWindow", glua_newWindow);
+    lua_register(globalState, "gfx_newWindow", glua_newWindow);
     return globalState;
 }
