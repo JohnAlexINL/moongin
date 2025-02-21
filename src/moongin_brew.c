@@ -13,11 +13,11 @@
 #include "helpers/gsdl.h"
 #include "helpers/glua.h"
 
-const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o %s output.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o %s moongin.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
 
 int sysync(const char *command) {
     printf("    ... running %s\n", command);
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     /* Then make a *.c which injects the bytecode */
     char *mainc = malloc(maxFilesize*8 + 255);
     sprintf(mainc, moongin_frame, moongin_list, moongin_item, moongin_gsdl, moongin_glua, xxd);
-    file_write("./output.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
+    file_write("./moongin.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
 
     /* finish up by compiling it for each platform */
     for(i=0;i<platnum;i++) {
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
         printf("invalid platform \"%s\"\n", platforms[i]); exit(1);
     }
 
-    /* clean up the generated build.luac and output.c */
+    /* clean up the generated build.luac and moongin.c */
     file_delete("build.luac");
-    // file_delete("output.c");
+    file_delete("moongin.c");
 }
