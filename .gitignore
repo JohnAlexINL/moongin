@@ -1,1 +1,5 @@
+.vscode
 output/*
+output.c
+src/helpers
+main

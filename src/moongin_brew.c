@@ -6,18 +6,18 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "file.c"
-#include "list.h"
-#include "item.h"
 #include "strings.h"
-#include "moongin.h"
-#include "gsdl.h"
-#include "glua.h"
+#include "helpers/list.h"
+#include "helpers/item.h"
+#include "helpers/moongin.h"
+#include "helpers/gsdl.h"
+#include "helpers/glua.h"
 
-const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o x86windows.exe output.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o x86linux.elf output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o x86mac.app output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o ARMmac.app output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o ARMlinux.elf output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o %s output.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o %s output.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
 
 int sysync(const char *command) {
     printf("    ... running %s\n", command);
@@ -52,6 +52,7 @@ char command [512];
 int main(int argc, char **argv) {
     char *compiler = NULL;
     char *luafile = NULL;
+    char *outname = NULL;
     char **platforms = NULL; int platnum = 0;
     int i; int code;
     if (argc<2) { printf(help$); exit(1); }
@@ -66,17 +67,19 @@ int main(int argc, char **argv) {
             printf(vhead$); exit(0);
         }
     if (strcmp(argv[1],"-c")==0) {
-        if (argc < 5) { printf("-c expected a compiler, filename, and platforms to build for\n"); exit(1); }
-        compiler = argv[2];
+        if (argc < 6) { printf("-c expected a binary name, lua, compiler, and platforms to build for\n"); exit(1); }
+        outname = argv[2];
         luafile = argv[3];
-        platforms = argv + 4;
-        platnum = argc - 4;
+        compiler = argv[4];
+        platforms = argv + 5;
+        platnum = argc - 5;
     } else {
-        if (argc < 3) { printf("expected a filename and platforms to build for\n"); exit(1); }
+        if (argc < 4) { printf("expected a binary name, lua file, and platforms to build for\n"); exit(1); }
         compiler = "clang";
-        luafile = argv[1];
-        platforms = argv + 2;
-        platnum = argc - 2;
+        outname = argv[1];
+        luafile = argv[2];
+        platforms = argv + 3;
+        platnum = argc - 3;
     }
     /* Check to make sure the *.lua source file exists, then luac it */
     if (file_exists(luafile)==false) { printf("no source file \"%s\" found\n", luafile); exit(1); }
@@ -99,15 +102,15 @@ int main(int argc, char **argv) {
     /* finish up by compiling it for each platform */
     for(i=0;i<platnum;i++) {
         if (strcmp(platforms[i], "xlinux")==0) 
-        { sprintf(command, target_x86linux, compiler); sysync(command); continue; }
+        { sprintf(command, target_x86linux, compiler, outname); sysync(command); continue; }
         if (strcmp(platforms[i], "xmac")==0) 
-        { sprintf(command, target_x86mac, compiler); sysync(command); continue; }
+        { sprintf(command, target_x86mac, compiler, outname); sysync(command); continue; }
         if (strcmp(platforms[i], "xwin")==0) 
-        { sprintf(command, target_x86win, compiler); sysync(command); continue; }
+        { sprintf(command, target_x86win, compiler, outname); sysync(command); continue; }
         if (strcmp(platforms[i], "armlinux")==0) 
-        { sprintf(command, target_ARMlinux, compiler); sysync(command); continue; }
+        { sprintf(command, target_ARMlinux, compiler, outname); sysync(command); continue; }
         if (strcmp(platforms[i], "armmac")==0) 
-        { sprintf(command, target_ARMmac, compiler); sysync(command); continue; }
+        { sprintf(command, target_ARMmac, compiler, outname); sysync(command); continue; }
         printf("invalid platform \"%s\"\n", platforms[i]); exit(1);
     }
 
