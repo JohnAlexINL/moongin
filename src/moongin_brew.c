@@ -127,5 +127,5 @@ int main(int argc, char **argv) {
 
     /* clean up the generated build.luac and moongin.c */
     file_delete("build.luac");
-    // file_delete("moongin.c");
+    file_delete("moongin.c");
 }

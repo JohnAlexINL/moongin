@@ -1,5 +1,6 @@
 .vscode
 output/*
 output.c
+moongin.c
 src/helpers
 main
