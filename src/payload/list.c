@@ -1,3 +1,7 @@
+#ifndef MOONGIN 
+    #include "includes.h"
+#endif
+
 typedef struct {
     int entries; int size;
     void **item;
@@ -46,4 +50,10 @@ bool list_find(list_t *self, void *item) {
     int i; for(i=0; i<self->entries; i++) {
         if (self->item[i] == item) { return true; }
     }   return false;
+}
+
+int list_index(list_t *self, void *item) {
+    int i; for(i=0; i<self->entries; i++) {
+        if (self->item[i] == item) { return i; }
+    }   return false;   
 }

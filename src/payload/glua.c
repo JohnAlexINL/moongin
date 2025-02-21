@@ -1,27 +1,13 @@
-#include <lua5.4/lua.h>
-#include <lua5.4/lualib.h>
-#include <lua5.4/lauxlib.h>
-
-const char sdls_index_out_of_range[] = "%s (arg %d) index out of range";
-const char sdls_index_destroyed[] = "%s (arg %d) cannot reuse destroyed instance";
-const char sdls_expect_int[] = "%s (arg %d) expected integer";
-const char sdls_expect_float[] = "%s (arg %d) expected floating-point number";
-const char sdls_expect_table[] = "%s (arg %d) expected table";
-const char sdls_expect_table_bad[] = "%s (arg %d) table missing required values";
-const char sdls_expect_string[] = "%s (arg %d) expected string";
-const char sdls_wrong_type[] = "%s (arg %d) wrong data type";
-const char sdls_invalid_id[] = "%s (arg %d) given invalid id";
-const char sdls_unable_file[] = "%s (arg %d) returned NULL, check that the file exists and is readable";
-const char sdls_unable_render[] = "%s (arg %d) failed to render to canvas";
-
-char pushfmtstr[255];
-#define RET_ERR return 1
+#ifndef MOONGIN 
+    #include "includes.h"
+#endif
 void glua_error(lua_State *context, const char *fmt, const char *src, int arg) { sprintf(pushfmtstr, fmt, src, arg); lua_pushstring(context, pushfmtstr); lua_error(context); }
 
 // ================ Get data on and off the stack
 
 int glua_getInt(lua_State *context, char *func, int arg) {
-    if (!lua_isinteger(context, -1)) {
+    if (!lua_isnumber(context, -1)) {
+        printf("ERR: type %s\n", lua_typename(context, lua_type(context, -1)));
         glua_error(context, sdls_expect_int, func, arg); 
         RET_ERR;
     }
@@ -50,7 +36,6 @@ const char *glua_getString(lua_State *context, char *func, int arg) {
     return value;
 }
 
-const SDL_Rect BadBox; 
 SDL_Rect glua_getBox(lua_State *context, char *func, int arg) {
     // Ensure the argument is a table
     SDL_Rect rect;
@@ -71,11 +56,7 @@ SDL_Rect glua_getBox(lua_State *context, char *func, int arg) {
     return rect;
 }
 
-// ===================== SDL Functions
-
-list_t *glua_windows;       int tag_windows = 0;
-list_t *glua_renderers;     int tag_renderers = 1;
-list_t *glua_textures;      int tag_textures = 2;
+// ===================== SDL Rendering Functions
 
 int glua_byterun(lua_State *context, const char *bytecode, int bytecode_size) {
     if (luaL_loadbuffer(context, bytecode, bytecode_size, "chunk") != LUA_OK) {
@@ -87,6 +68,15 @@ int glua_byterun(lua_State *context, const char *bytecode, int bytecode_size) {
         return ERROR;
     }
     return OK;
+}
+
+int glua_exit(lua_State *context){
+    int i; int status = glua_getInt(context, "core.exit", 1);
+    int num_windows = glua_windows->entries;
+    int num_renderers = glua_renderers->entries;
+    for(i=0;i<num_windows;i++) { gsdl_windowDestroy( glua_windows->item[i] ); }
+    for(i=0;i<num_renderers;i++) { gsdl_windowDestroy( glua_renderers->item[i] ); }
+    gsdl_quit(); exit(status); 
 }
 
 int glua_newWindow(lua_State *context){
@@ -201,7 +191,23 @@ int glua_delay(lua_State *context) {
     return OK;
 }
 
-// TODO: pollEvent
+// ================================ Stack Manipulation Functions
+
+void glua_subfield_string(lua_State *state, const char *field, const char *value) {
+    lua_pushstring(state, value);
+    lua_setfield(state, -2, field);
+}
+
+void glua_subfield_int(lua_State *state, const char *field, int value) {
+    lua_pushinteger(state, value);
+    lua_setfield(state, -2, field);
+}
+
+void glua_enter_subtable(lua_State *state, const char *field) {
+    lua_newtable(state);
+    lua_setfield(state, -2, field);
+    lua_getfield(state, -1, field);
+}
 
 // ========================== Entity System Functions
 
@@ -239,22 +245,6 @@ void glua_package_remove(lua_State *state, const char *package) {
     lua_pop(state, -1);
 }
 
-void glua_subfield_string(lua_State *state, const char *field, const char *value) {
-    lua_pushstring(state, value);
-    lua_setfield(state, -2, field);
-}
-
-void glua_subfield_int(lua_State *state, const char *field, int value) {
-    lua_pushinteger(state, value);
-    lua_setfield(state, -2, field);
-}
-
-void glua_enter_subtable(lua_State *state, const char *field) {
-    lua_newtable(state);
-    lua_setfield(state, -2, field);
-    lua_getfield(state, -1, field);
-}
-
 lua_State *glua_initFunctions() {
     // Push our data types to the global item table
     global_item_table = list_new(16);
@@ -276,6 +266,7 @@ lua_State *glua_initFunctions() {
         lua_setglobal(globalState, "gfx");
     // Set up CORE
         lua_getglobal(globalState, "core");
+            glua_method(globalState, "exit", glua_exit);
             glua_method(globalState, "id", glua_getByIdInt);
             glua_method(globalState, "parseid", glua_getByIdStr);
         lua_pop(globalState, 1);
@@ -291,6 +282,12 @@ lua_State *glua_initFunctions() {
             glua_method(globalState, "setColor",           glua_setColor);
             glua_method(globalState, "clear",              glua_clear);
             glua_method(globalState, "delay",              glua_delay);
+            glua_method(globalState, "eventPoll",          glua_pollEvent);
+    // Events
+        glua_enter_subtable(globalState, "event");
+            glua_subfield_int(globalState, "type", -1);
+            glua_subfield_int(globalState, "timestamp", -1);
+            lua_pop(globalState, 1); // "events"
     // Flags    
         glua_enter_subtable(globalState, "flags");
             glua_enter_subtable(globalState, "window");
@@ -318,13 +315,99 @@ lua_State *glua_initFunctions() {
                 glua_subfield_int(globalState, "VULKAN",             0x10000000);
                 glua_subfield_int(globalState, "METAL",              0x20000000);
                 glua_subfield_int(globalState, "INPUT_GRABBED",      0x00000100);
-                lua_pop(globalState, 1); // pop "window"
+                lua_pop(globalState, 1); // "window"
             glua_enter_subtable(globalState, "renderer");
                 glua_subfield_int(globalState, "SOFTWARE",        0x00000001);
                 glua_subfield_int(globalState, "ACCELERATED",     0x00000002);
                 glua_subfield_int(globalState, "PRESENTVSYNC",    0x00000004);
                 glua_subfield_int(globalState, "TARGETTEXTURE",   0x00000008);
-                lua_pop(globalState, 1);
-        lua_pop(globalState, 1); // pop "gfx" && "flags"
+                lua_pop(globalState, 1); // "renderer"
+            glua_enter_subtable(globalState, "event");
+                glua_subfield_int(globalState, "FIRSTEVENT", 0);
+                glua_subfield_int(globalState, "QUIT", 0x100);
+                glua_subfield_int(globalState, "APP_TERMINATING", 0x101);
+                glua_subfield_int(globalState, "APP_LOWMEMORY", 0x102);
+                glua_subfield_int(globalState, "APP_WILLENTERBACKGROUND", 0x103);
+                glua_subfield_int(globalState, "APP_DIDENTERBACKGROUND", 0x104);
+                glua_subfield_int(globalState, "APP_WILLENTERFOREGROUND", 0x105);
+                glua_subfield_int(globalState, "APP_DIDENTERFOREGROUND", 0x106);
+                glua_subfield_int(globalState, "LOCALECHANGED", 0x107);
+                glua_subfield_int(globalState, "DISPLAYEVENT", 0x150);
+                // Window Events
+                glua_subfield_int(globalState, "WINDOWEVENT", 0x200);
+                    glua_enter_subtable(globalState, "window");
+                        glua_subfield_int(globalState, "NONE", 0);
+                        glua_subfield_int(globalState, "SHOWN", 1);
+                        glua_subfield_int(globalState, "HIDDEN", 2);
+                        glua_subfield_int(globalState, "EXPOSED", 3);
+                        glua_subfield_int(globalState, "MOVED", 4);
+                        glua_subfield_int(globalState, "RESIZED", 5);
+                        glua_subfield_int(globalState, "SIZE_CHANGED", 6);
+                        glua_subfield_int(globalState, "MINIMIZED", 7);
+                        glua_subfield_int(globalState, "MAXIMIZED", 8);
+                        glua_subfield_int(globalState, "RESTORED", 9);
+                        glua_subfield_int(globalState, "ENTER", 10);
+                        glua_subfield_int(globalState, "LEAVE", 11);
+                        glua_subfield_int(globalState, "FOCUS_GAINED", 12);
+                        glua_subfield_int(globalState, "FOCUS_LOST", 13);
+                        glua_subfield_int(globalState, "CLOSE", 14);
+                        glua_subfield_int(globalState, "TAKE_FOCUS", 15);
+                        glua_subfield_int(globalState, "HIT_TEST", 16);
+                        glua_subfield_int(globalState, "ICCPROF_CHANGED", 17);
+                        glua_subfield_int(globalState, "DISPLAY_CHANGED", 18);
+                    lua_pop(globalState, 1); // "gfx.flags.event.window"
+                glua_subfield_int(globalState, "SYSWMEVENT", 0x201);
+                glua_subfield_int(globalState, "KEYDOWN", 0x300);
+                glua_subfield_int(globalState, "KEYUP", 0x301);
+                glua_subfield_int(globalState, "TEXTEDITING", 0x302);
+                glua_subfield_int(globalState, "TEXTINPUT", 0x303);
+                glua_subfield_int(globalState, "KEYMAPCHANGED", 0x304);
+                glua_subfield_int(globalState, "TEXTEDITING_EXT", 0x305);
+                glua_subfield_int(globalState, "MOUSEMOTION", 0x400);
+                glua_subfield_int(globalState, "MOUSEBUTTONDOWN", 0x401);
+                glua_subfield_int(globalState, "MOUSEBUTTONUP", 0x402);
+                glua_subfield_int(globalState, "MOUSEWHEEL", 0x403);
+                glua_subfield_int(globalState, "JOYAXISMOTION", 0x600);
+                glua_subfield_int(globalState, "JOYBALLMOTION", 0x601);
+                glua_subfield_int(globalState, "JOYHATMOTION", 0x602);
+                glua_subfield_int(globalState, "JOYBUTTONDOWN", 0x603);
+                glua_subfield_int(globalState, "JOYBUTTONUP", 0x604);
+                glua_subfield_int(globalState, "JOYDEVICEADDED", 0x605);
+                glua_subfield_int(globalState, "JOYDEVICEREMOVED", 0x606);
+                glua_subfield_int(globalState, "JOYBATTERYUPDATED", 0x607);
+                glua_subfield_int(globalState, "CONTROLLERAXISMOTION", 0x650);
+                glua_subfield_int(globalState, "CONTROLLERBUTTONDOWN", 0x651);
+                glua_subfield_int(globalState, "CONTROLLERBUTTONUP", 0x652);
+                glua_subfield_int(globalState, "CONTROLLERDEVICEADDED", 0x653);
+                glua_subfield_int(globalState, "CONTROLLERDEVICEREMOVED", 0x654);
+                glua_subfield_int(globalState, "CONTROLLERDEVICEREMAPPED", 0x655);
+                glua_subfield_int(globalState, "CONTROLLERTOUCHPADDOWN", 0x656);
+                glua_subfield_int(globalState, "CONTROLLERTOUCHPADMOTION", 0x657);
+                glua_subfield_int(globalState, "CONTROLLERTOUCHPADUP", 0x658);
+                glua_subfield_int(globalState, "CONTROLLERSENSORUPDATE", 0x659);
+                glua_subfield_int(globalState, "CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3", 0x65A);
+                glua_subfield_int(globalState, "CONTROLLERSTEAMHANDLEUPDATED", 0x65B);
+                glua_subfield_int(globalState, "FINGERDOWN", 0x700);
+                glua_subfield_int(globalState, "FINGERUP", 0x701);
+                glua_subfield_int(globalState, "FINGERMOTION", 0x702);
+                glua_subfield_int(globalState, "DOLLARGESTURE", 0x800);
+                glua_subfield_int(globalState, "DOLLARRECORD", 0x801);
+                glua_subfield_int(globalState, "MULTIGESTURE", 0x802);
+                glua_subfield_int(globalState, "CLIPBOARDUPDATE", 0x900);
+                glua_subfield_int(globalState, "DROPFILE", 0x1000);
+                glua_subfield_int(globalState, "DROPTEXT", 0x1001);
+                glua_subfield_int(globalState, "DROPBEGIN", 0x1002);
+                glua_subfield_int(globalState, "DROPCOMPLETE", 0x1003);
+                glua_subfield_int(globalState, "AUDIODEVICEADDED", 0x1100);
+                glua_subfield_int(globalState, "AUDIODEVICEREMOVED", 0x1101);
+                glua_subfield_int(globalState, "SENSORUPDATE", 0x1200);
+                glua_subfield_int(globalState, "RENDER_TARGETS_RESET", 0x2000);
+                glua_subfield_int(globalState, "RENDER_DEVICE_RESET", 0x2001);
+                glua_subfield_int(globalState, "POLLSENTINEL", 0x7F00);
+                glua_subfield_int(globalState, "USEREVENT", 0x8000);
+                glua_subfield_int(globalState, "LASTEVENT", 0xFFFF);
+                lua_pop(globalState, 1); // "events"
+            lua_pop(globalState, 1); // "flags"
+        lua_pop(globalState, 1); // "gfx"
     return globalState;
 }

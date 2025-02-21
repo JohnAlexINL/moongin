@@ -7,11 +7,23 @@
 #include <unistd.h>
 #include "file.c"
 #include "strings.h"
+#include "helpers/includes.h"
 #include "helpers/list.h"
 #include "helpers/item.h"
 #include "helpers/moongin.h"
 #include "helpers/gsdl.h"
 #include "helpers/glua.h"
+#include "helpers/events.h"
+#include "helpers/gsdl.c"
+#include "helpers/glua.c"
+#include "helpers/events.c"
+
+#define moongin_modules \
+    moongin_frame, \
+    moongin_list, moongin_item, \
+    moongin_gsdl_h, moongin_glua_h, moongin_events_h, \
+    moongin_gsdl, moongin_glua, moongin_events
+    
 
 const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o %s moongin.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
 const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
@@ -67,10 +79,10 @@ int main(int argc, char **argv) {
             printf(vhead$); exit(0);
         }
     if (strcmp(argv[1],"-c")==0) {
-        if (argc < 6) { printf("-c expected a binary name, lua, compiler, and platforms to build for\n"); exit(1); }
-        outname = argv[2];
-        luafile = argv[3];
-        compiler = argv[4];
+        if (argc < 6) { printf("-c expected a compiler, binary name, lua file, and platforms to build for\n"); exit(1); }
+        compiler = argv[2];
+        outname = argv[3];
+        luafile = argv[4];
         platforms = argv + 5;
         platnum = argc - 5;
     } else {
@@ -96,7 +108,7 @@ int main(int argc, char **argv) {
 
     /* Then make a *.c which injects the bytecode */
     char *mainc = malloc(maxFilesize*8 + 255);
-    sprintf(mainc, moongin_frame, moongin_list, moongin_item, moongin_gsdl, moongin_glua, xxd);
+    sprintf(mainc, moongin_modules, xxd);
     file_write("./moongin.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
 
     /* finish up by compiling it for each platform */
@@ -111,10 +123,9 @@ int main(int argc, char **argv) {
         { sprintf(command, target_ARMlinux, compiler, outname); sysync(command); continue; }
         if (strcmp(platforms[i], "armmac")==0) 
         { sprintf(command, target_ARMmac, compiler, outname); sysync(command); continue; }
-        printf("invalid platform \"%s\"\n", platforms[i]); exit(1);
     }
 
     /* clean up the generated build.luac and moongin.c */
     file_delete("build.luac");
-    file_delete("moongin.c");
+    // file_delete("moongin.c");
 }

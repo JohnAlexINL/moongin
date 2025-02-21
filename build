@@ -1,12 +1,14 @@
-mkdir -p output
 # pre-prepare our "library"
 mkdir -p ./src/helpers
+bytes moongin_includes ./src/payload/includes.h ./src/helpers/includes.h
 bytes moongin_frame ./src/payload/moongin.c ./src/helpers/moongin.h
 bytes moongin_list  ./src/payload/list.c ./src/helpers/list.h
-bytes moongin_gsdl  ./src/payload/gsdl.c ./src/helpers/gsdl.h
-bytes moongin_glua  ./src/payload/glua.c ./src/helpers/glua.h
 bytes moongin_item  ./src/payload/item.c ./src/helpers/item.h
-# then actually build the "brewer"
+bytes moongin_gsdl_h  ./src/payload/gsdl.h ./src/helpers/gsdl.h
+bytes moongin_gsdl  ./src/payload/gsdl.c ./src/helpers/gsdl.c
+bytes moongin_glua_h  ./src/payload/glua.h ./src/helpers/glua.h
+bytes moongin_glua  ./src/payload/glua.c ./src/helpers/glua.c
+bytes moongin_events_h ./src/payload/events.h ./src/helpers/events.h
+bytes moongin_events ./src/payload/events.c ./src/helpers/events.c
+mkdir -p output
 gcc -o ./output/moongin.brew ./src/moongin_brew.c --static
-# and test it out on some example lua code
-./output/moongin.brew main ./helpers/main.lua xlinux

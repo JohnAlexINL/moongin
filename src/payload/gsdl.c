@@ -1,13 +1,15 @@
-#include <stdio.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#ifndef MOONGIN 
+    #include "includes.h"
+#endif
 
-int initialize_SDL() {
+int gsdl_init() {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("SDL_Init error: %s\n", SDL_GetError());
         return ERROR;
     }   return OK;
 }
+
+void gsdl_quit() { SDL_Quit(); }
 
 SDL_Window* gsdl_windowNew(const char *title, int width, int height, int flags) {
     SDL_Window *window = SDL_CreateWindow(
@@ -37,7 +39,6 @@ void gsdl_presentRenderer(SDL_Renderer *renderer) { SDL_RenderPresent(renderer);
 
 bool gsdl_setColor(SDL_Renderer *renderer, char red, char green, char blue, char alpha) { return SDL_SetRenderDrawColor(renderer, red, green, blue, alpha); }
 void gsdl_clear(SDL_Renderer *renderer) { SDL_RenderClear(renderer); SDL_RenderPresent(renderer); }
-bool gsdl_pollEvent(SDL_Event *event) { return SDL_PollEvent(event); }
 void gsdl_delay(int milliseconds) { SDL_Delay(milliseconds); }
 
 SDL_Texture *gsdl_loadTexture(SDL_Renderer *renderer, const char *filename) { 
@@ -49,3 +50,5 @@ SDL_Texture *gsdl_loadTexture(SDL_Renderer *renderer, const char *filename) {
 int gsdl_renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, SDL_Rect src, SDL_Rect dest) {
     return SDL_RenderCopy(renderer, texture, &src, &dest);
 }
+
+bool gsdl_pollEvent() { return SDL_PollEvent(&eventHandle); }
