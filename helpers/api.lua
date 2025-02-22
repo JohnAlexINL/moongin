@@ -11,7 +11,6 @@ core.id = function(object) end
 --- @param object string id encoded as a hexidecimal string
 --- @return lightuserdata pointer
 core.parseid = function(object) end
-
 --- https://wiki.libsdl.org/SDL2/FrontPage
 gfx = { flags = {}}
 --- @param title string Text to be displayed in titlebar; empty string is valid
