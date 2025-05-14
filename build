@@ -11,6 +11,7 @@ cat \
 
 bytes runtime_stb ./src/runtime/_bundle.c ./src/builder/_bundle.h
 bytes runtime_frame ./src/runtime/runtime.c ./src/builder/_runtime.h
+bytes license_h LICENSE ./src/builder/_license.h
 rm ./src/runtime/_bundle.c
 
 gcc -o moongin ./src/moongin.c -static

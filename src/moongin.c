@@ -5,13 +5,15 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#define maxFilesize 4 * 1024 * 1024
 #include "builder/file.h"
 #include "builder/bytes.h"
 #include "builder/targets.h"
 #include "builder/strings.h"
 #include "builder/_bundle.h" // created during project `build` step
 #include "builder/_runtime.h"
+#include "builder/_license.h"
+
+#define maxFilesize 4 * 1024 * 1024
 
 int sysync(const char *command) {
     printf("    ... running %s\n", command);
@@ -34,6 +36,11 @@ int main(int argc, char **argv) {
     char **platforms = NULL; int platnum = 0;
     int i; int code;
     if (argc<2) { printf(help$); exit(1); }
+    if (strcmp(argv[1],"-l")==0 |
+        strcmp(argv[1],"--license")==0|
+        strcmp(argv[1],"license")==0) {
+            printf(license_h); exit(0);
+        }
     if (strcmp(argv[1],"-h")==0 |
         strcmp(argv[1],"--help")==0|
         strcmp(argv[1],"help")==0) {
