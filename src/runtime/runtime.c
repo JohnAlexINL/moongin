@@ -1,6 +1,3 @@
-#define OK 0
-#define ERROR -1
-#define RET_ERR return 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,15 +9,11 @@
 #include <SDL2/SDL_image.h>
 
 #define MOONGIN
+#define OK 0
+#define ERROR -1
+#define RET_ERR return 1
 
-%s // list
-%s // item 
-%s // gsdl header
-%s // glua header
-%s // event header
-%s // gsdl source
-%s // glua source
-%s // event source
+%s // runtime stb
 %s // luac payload
 
 int main (int argc, char **argv) {

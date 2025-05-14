@@ -5,31 +5,13 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "file.c"
-#include "strings.h"
-#include "helpers/includes.h"
-#include "helpers/list.h"
-#include "helpers/item.h"
-#include "helpers/moongin.h"
-#include "helpers/gsdl.h"
-#include "helpers/glua.h"
-#include "helpers/events.h"
-#include "helpers/gsdl.c"
-#include "helpers/glua.c"
-#include "helpers/events.c"
-
-#define moongin_modules \
-    moongin_frame, \
-    moongin_list, moongin_item, \
-    moongin_gsdl_h, moongin_glua_h, moongin_events_h, \
-    moongin_gsdl, moongin_glua, moongin_events
-    
-
-const char target_x86win[] =   "%s --target=x86_64-w64-mingw32 -o %s moongin.c -luser32 -lkernel32 -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86linux[] = "%s --target=x86_64-linux-gnu -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_x86mac[] =   "%s --target=x86_64-apple-darwin -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMmac[] =   "%s --target=aarch64-apple-darwin -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
-const char target_ARMlinux[] = "%s --target=aarch64-linux-gnu -o %s moongin.c -pthread -lSDL2 -lSDL2_ttf -lSDL2_image -llua5.4 -lm";
+#define maxFilesize 4 * 1024 * 1024
+#include "builder/file.h"
+#include "builder/bytes.h"
+#include "builder/targets.h"
+#include "builder/strings.h"
+#include "builder/_bundle.h" // created during project `build` step
+#include "builder/_runtime.h"
 
 int sysync(const char *command) {
     printf("    ... running %s\n", command);
@@ -42,22 +24,6 @@ int sysync(const char *command) {
             perror("waitpid"); exit(EXIT_FAILURE);
         }   return WIFEXITED(status);
     }
-}
-
-#define maxFilesize 1024 * 1024 * 4
-char *xxout(int size, char *name, char *content) {
-    const char nline[] = "\n    ";
-    const char headFmt[] = "char %s[] = {\n    ";
-    const char hexFmt[] = "0x%02x,";
-    char *result = malloc(maxFilesize*8 + 36);
-    sprintf(result, headFmt, name);
-    int i; int p=strlen(result);
-    for(i=0;i<size;i++) {
-        p+= sprintf(result+p, hexFmt, (unsigned char)content[i]);
-        if ((i+1)%16==0) { p+= sprintf(result+p, nline); }
-    }
-    sprintf(result + p, "0x00\n};\n");
-    return result;
 }
 
 char command [512];
@@ -104,11 +70,11 @@ int main(int argc, char **argv) {
     char *mainfile = malloc(sizeof(char)*maxFilesize);
     int size = file_read("build.luac", mainfile, maxFilesize*sizeof(char));
     if (size == false) { printf("unable to open bytecode for reading\n"); exit(1); }
-    char *xxd = xxout(size, "lua_entry", mainfile);
+    char *luabuffer = malloc( size * 8 + 256 ); bytes(luabuffer, size, "lua_entry", mainfile);
 
     /* Then make a *.c which injects the bytecode */
     char *mainc = malloc(maxFilesize*8 + 255);
-    sprintf(mainc, moongin_modules, xxd);
+    sprintf(mainc, runtime_frame, runtime_stb, luabuffer);
     file_write("./moongin.c", mainc, (sizeof(char)*maxFilesize)*8 + 255);
 
     /* finish up by compiling it for each platform */
