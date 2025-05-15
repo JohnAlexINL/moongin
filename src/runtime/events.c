@@ -12,9 +12,9 @@ int glua_pollEvent(lua_State *context) {
     glua_subfield_int(context, "timestamp", eventHandle.common.timestamp);
         switch( eventHandle.type ) {
         case SDL_POLLSENTINEL: break; // specifically nothing happened
-        default: printf("_pollEvent: unhandled type %x\n", eventHandle.type); break;
-        case SDL_WINDOWEVENT: printf("_pollEvent: Window Event %x sub %d\n", eventHandle.type, eventHandle.window.event); glua_event_window(context); break;
-        case SDL_KEYDOWN: case SDL_KEYUP: printf("_pollEvent: Keyboard Event %x\n", eventHandle.type); glua_event_keyboard(context); break;
+        default: break;
+        case SDL_WINDOWEVENT: glua_event_window(context); break;
+        case SDL_KEYDOWN: case SDL_KEYUP: glua_event_keyboard(context); break;
     }
 
     lua_pop(context, 2); // pop "gfx" and "event"

@@ -105,7 +105,15 @@ without calling the `destroy` method_
 |--| `gfx.alphaTexture` | `id, alpha` | [SDL_SetTextureAlphaMod](https://wiki.libsdl.org/SDL2/SDL_SetTextureAlphaMod) |
 |--| `gfx.blendModeTexture` | `id, flags` | [SDL_BlendMode](https://wiki.libsdl.org/SDL2/SDL_BlendMode) |
 |--| `gfx.scaleModeTexture` | `id, flags` | [SDL_SetTextureScaleMode](https://wiki.libsdl.org/SDL2/SDL_SetTextureScaleMode)
-|--| `gfx.readRenderer` | `id, box` ➔ <abbr title="list: rgba values">`list`</abbr> | [SDL_RenderReadPixels](https://wiki.libsdl.org/SDL2/SDL_RenderReadPixels)
+|--| `gfx.readRenderer` | `id, box` ➔ <abbr title="list: rgba values">`list`</abbr> | [SDL_RenderReadPixels](https://wiki.libsdl.org/SDL2/SDL_RenderReadPixels) |
+|--| `gfx.loadFont` | `filepath, ptsize` ➔ `id`  | [TTF_OpenFont](https://wiki.libsdl.org/SDL2_ttf/TTF_OpenFont) |
+|--| `gfx.destroyFont` | `id` | [TTF_CloseFont](https://wiki.libsdl.org/SDL2_ttf/TTF_CloseFont) |
+|--| `gfx.measureFont` | `id, text, width` ➔ `chars` | *Return the number of characters* [TTF_MeasureUTF8](https://wiki.libsdl.org/SDL2_ttf/TTF_MeasureUTF8) |
+|--| `gfx.resizeFont` | `id, ptsize` | [TTF_SetFontSize](https://wiki.libsdl.org/SDL2_ttf/TTF_SetFontSize) |
+|--| `gfx.getStyleFont` | `id` ➔ `flags` | [TTF_GetFontStyle](https://wiki.libsdl.org/SDL2_ttf/TTF_GetFontStyle) |
+|--| `gfx.setStyleFont` | `id, flags` | [TTF_SetFontStyle](https://wiki.libsdl.org/SDL2_ttf/TTF_SetFontStyle) |
+|--| `gfx.renderFontSolid` | `id, string` | [TTF_RenderUNICODE_Solid](https://wiki.libsdl.org/SDL2_ttf/TTF_RenderUTF8_Solid) |
+|--| `gfx.renderFontBlended` | `id, string` | [TTF_RenderUNICODE_Blended](https://wiki.libsdl.org/SDL2_ttf/TTF_RenderUTF8_Blended) |
 
 <!-- 
     SDL_SetTextureUserData ? direct manipulating of pixels

@@ -7,6 +7,7 @@
 #include <lua5.4/lauxlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 #define MOONGIN
 #define OK 0

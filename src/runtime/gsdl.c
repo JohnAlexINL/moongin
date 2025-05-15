@@ -52,3 +52,9 @@ int gsdl_renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, SDL_Rect sr
 }
 
 bool gsdl_pollEvent() { return SDL_PollEvent(&eventHandle); }
+
+TTF_Font* gsdl_loadFont(const char *filename, int ptsize) {
+    TTF_Font * ref = TTF_OpenFont(filename, ptsize);
+    if ( ref == NULL ) { printf("SDL_loadFont error: %s\n", SDL_GetError()); return NULL; }
+    return ref;
+}

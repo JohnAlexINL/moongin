@@ -15,3 +15,4 @@ bytes license_h LICENSE ./src/builder/_license.h
 rm ./src/runtime/_bundle.c
 
 gcc -o moongin ./src/moongin.c -static
+./moongin main ./assets/main.lua xlinux

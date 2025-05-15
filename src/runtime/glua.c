@@ -1,6 +1,7 @@
 #ifndef MOONGIN 
     #include "includes.h"
 #endif
+#define TODO(text) fprintf(stderr, "TODO: %s \n", text); exit(1);
 void glua_error(lua_State *context, const char *fmt, const char *src, int arg) { sprintf(pushfmtstr, fmt, src, arg); lua_pushstring(context, pushfmtstr); lua_error(context); }
 
 // ================ Get data on and off the stack
@@ -74,6 +75,7 @@ int glua_exit(lua_State *context){
     int i; int status = glua_getInt(context, "core.exit", 1);
     int num_windows = glua_windows->entries;
     int num_renderers = glua_renderers->entries;
+    TTF_Quit(); // kill font renderer
     for(i=0;i<num_windows;i++) { gsdl_windowDestroy( glua_windows->item[i] ); }
     for(i=0;i<num_renderers;i++) { gsdl_windowDestroy( glua_renderers->item[i] ); }
     gsdl_quit(); exit(status); 
@@ -88,6 +90,7 @@ int glua_newWindow(lua_State *context){
     SDL_Window *result = gsdl_windowNew(title, width, height, flags);
     list_add(glua_windows, (void*)result);
     lua_pushinteger(context, item_newId(tag_windows, glua_windows->entries-1));
+    if ( TTF_Init() == ERROR ) { glua_error(context, sdls_init_failure, "gfx.newWindow", 1); RET_ERR; } // init font renderer if not already
     return 1;
 }
 
@@ -191,6 +194,37 @@ int glua_delay(lua_State *context) {
     return OK;
 }
 
+int glua_loadFont(lua_State *context) {
+    int ptsize = glua_getInt(context, "gfx.loadFont", 2); if ( ptsize == ERROR ) { RET_ERR; }
+    const char * filename = glua_getString(context, "gfx,loadFont", 1); if ( filename == NULL ) { RET_ERR; }
+    TTF_Font * ref = gsdl_loadFont(filename, ptsize); if ( ref == NULL ) { glua_error(context, sdls_unable_file, "gfx.loadFont", 1); RET_ERR; }
+    list_add(glua_fonts, (void*)ref);
+    lua_pushinteger(context, item_newId(tag_fonts, glua_fonts->entries-1));
+    return 1;
+}
+
+int glua_measureFont(lua_State *context)        { TODO("measureFont"); return 0; }
+int glua_destroyFont(lua_State *context)        { TODO("destroyFont"); return 0; }
+int glua_resizeFont(lua_State *context)         { TODO("resizeFont"); return 0;  }
+int glua_getStyleFont(lua_State *context)       { TODO("getStyleFont"); return 0;  }
+int glua_setStyleFont(lua_State *context)       { TODO("setStyleFont"); return 0;  }
+
+int glua_renderFontSolid(lua_State *context)    {
+    TODO("renderFontSolid"); return 0;
+    /*
+        SDL_Surface *surface = TTF_RenderText_Solid(font, msg, color);
+        error check *surface
+        text_texture = SDL_CreateTextureFromSurface(renderer, surface);
+        error check text_texture
+        SDL_FreeSurface(surface);
+        RenderCopy
+        DestroyTexture
+    */
+}
+
+int glua_renderFontBlended(lua_State *context)  { TODO("renderFontBlended"); return 0;  }
+
+
 // ================================ Stack Manipulation Functions
 
 void glua_subfield_string(lua_State *state, const char *field, const char *value) {
@@ -251,6 +285,7 @@ lua_State *glua_initFunctions() {
     glua_windows = list_new(8); list_add(global_item_table, glua_windows);
     glua_renderers = list_new(8); list_add(global_item_table, glua_renderers);
     glua_textures = list_new(255); list_add(global_item_table, glua_textures);
+    glua_fonts = list_new(255); list_add(global_item_table, glua_fonts);
     lua_State *globalState = luaL_newstate();
     luaL_openlibs(globalState);
     glua_package_remove(globalState, "os");
@@ -272,17 +307,26 @@ lua_State *glua_initFunctions() {
         lua_pop(globalState, 1);
     // Set up GFX
         lua_getglobal(globalState, "gfx");
-            glua_method(globalState, "newWindow",          glua_newWindow);
-            glua_method(globalState, "destroyWindow",      glua_destroyWindow);
-            glua_method(globalState, "newRenderer",        glua_newRenderer);
-            glua_method(globalState, "destroyRenderer",    glua_destroyRenderer);
-            glua_method(globalState, "presentRenderer",    glua_presentRenderer);
-            glua_method(globalState, "loadTexture",        glua_loadTexture);
-            glua_method(globalState, "renderTexture",      glua_renderTexture);
-            glua_method(globalState, "setColor",           glua_setColor);
-            glua_method(globalState, "clear",              glua_clear);
-            glua_method(globalState, "delay",              glua_delay);
-            glua_method(globalState, "eventPoll",          glua_pollEvent);
+            glua_method(globalState, "newWindow",           glua_newWindow);
+            glua_method(globalState, "destroyWindow",       glua_destroyWindow);
+            glua_method(globalState, "newRenderer",         glua_newRenderer);
+            glua_method(globalState, "destroyRenderer",     glua_destroyRenderer);
+            glua_method(globalState, "presentRenderer",     glua_presentRenderer);
+            glua_method(globalState, "loadTexture",         glua_loadTexture);
+            glua_method(globalState, "renderTexture",       glua_renderTexture);
+            glua_method(globalState, "setColor",            glua_setColor);
+            glua_method(globalState, "clear",               glua_clear);
+            glua_method(globalState, "delay",               glua_delay);
+            glua_method(globalState, "eventPoll",           glua_pollEvent);
+
+            glua_method(globalState, "loadFont",            glua_loadFont);
+            glua_method(globalState, "measureFont",         glua_measureFont);
+            glua_method(globalState, "destroyFont",         glua_destroyFont);
+            glua_method(globalState, "resizeFont",          glua_resizeFont);
+            glua_method(globalState, "getStyleFont",        glua_getStyleFont);
+            glua_method(globalState, "setStyleFont",        glua_setStyleFont);
+            glua_method(globalState, "renderFontSolid",     glua_renderFontSolid);
+            glua_method(globalState, "renderFontBlended",   glua_renderFontBlended);
     // Events
         glua_enter_subtable(globalState, "event");
             glua_subfield_int(globalState, "type", -1);

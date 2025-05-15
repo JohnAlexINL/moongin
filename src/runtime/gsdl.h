@@ -17,6 +17,8 @@ SDL_Texture *gsdl_loadTexture(SDL_Renderer *renderer, const char *filename);
 int gsdl_renderTexture(SDL_Renderer *renderer, SDL_Texture *texture, SDL_Rect src, SDL_Rect dest);
 bool gsdl_pollEvent();
 
+TTF_Font* gsdl_loadFont(const char *filename, int ptsize); 
+
 // ================================ GSDL Constant Objects
 
 char pushfmtstr[255];

@@ -26,6 +26,14 @@ int glua_setColor(lua_State *context);
 int glua_clear(lua_State *context);
 int glua_delay(lua_State *context);
 int glua_pollEvent(lua_State *context);
+int glua_loadFont(lua_State *context);
+int glua_measureFont(lua_State *context);
+int glua_destroyFont(lua_State *context);
+int glua_resizeFont(lua_State *context);
+int glua_getStyleFont(lua_State *context);
+int glua_setStyleFont(lua_State *context);
+int glua_renderFontSolid(lua_State *context);
+int glua_renderFontBlended(lua_State *context);
 
 // ================================ ENTITY SYSTEM
 
@@ -36,8 +44,10 @@ int glua_getByIdStr(lua_State *context);
 
 list_t *glua_windows;       int tag_windows = 0;
 list_t *glua_renderers;     int tag_renderers = 1;
-list_t *glua_textures;      int tag_textures = 2; 
+list_t *glua_textures;      int tag_textures = 2;
+list_t *glua_fonts;         int tag_fonts = 3;
 
+const char sdls_init_failure[] = "%s (arg %d) initialization failure";
 const char sdls_index_out_of_range[] = "%s (arg %d) index out of range";
 const char sdls_index_destroyed[] = "%s (arg %d) cannot reuse destroyed instance";
 const char sdls_expect_int[] = "%s (arg %d) expected integer";
