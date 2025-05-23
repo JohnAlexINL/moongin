@@ -1,27 +1,78 @@
 # Moongin
 
-Moongin is a C+Lua game engine built against SDL2.
-Eventually, the intent is to write a game engine
-that can get built against `TinyGL`/`OpenGL` with
-`SDL2` that can handle 3D Models and animations
-created in Blender and be used for building
-our games in an absolutely tiny and extensible engine.
+Moongin is a cross-platform games and applications engine.
+It is intended to build against libraries like SDL, Lua, and TinyGL.
+Eventually, the intent is to get Moongin set up
+in a way that its binaries can be statically cross-compiled,
+and assets can be created for it in cross-platform tools like Blender.
 
-## License
+## Architecture
+
+Moongin depends on compilers like `clang` to do
+the heavy-lifting of compiling C-code, and
+depends on libraries like `SDL2` to handle
+complex stuff like getting windows and drawing to
+them in a way that's cross-platform.
+
+The 3D and rendering side of Moongin assumes the window is 
+(or contains) a framebuffer that can be manipulated trivially 
+with something like TinyGL/OpenGL.
+The framebuffer is then cast as a texture 
+to the real graphics frontend of the target system 
+using SDL to make it very easy to use software 
+*OR* hardware rendering, as well as to make
+porting Moongin's entire application architecture very easy.
+
+Moongin also includes support for animated `MD2` models
+using a variety of image types as textures.
+To keep the system as lightweight as possible, 
+Moongin's 3D engine does not have things like 
+lighting support or kinematics out of the box,
+but is easy to add and expose C-extensions to
+Moongin at compile time.
+
+<!-- 
+SDL_Texture *tex = SDL_CreateTexture(renderer,
+    SDL_PIXELFORMAT_ARGB8888,
+    SDL_TEXTUREACCESS_STREAMING,
+    width, height); ??
+-->
+
+## Philosophy
+
+Moongin is intended to be a game engine that "sucks less" --
+not only in the sense that 
+it's easier to use than things like Godot or Unity, 
+nor only in the sense that it's very easy to
+look under the hood and understand
+-- but also in the sense that it has things like
+extensibility, important features like community modding,
+and Quick-Use already in mind and baked into the design.
+
+## Licensing
 
 `moongin` is made available under the BSD 3-Clause License.
 The code linked into executables produced with `moongin`
 is shared code under the same license, and because of that
 the permissive BSD license was chosen instead of something like GPLv3.
 
-Basically, as long any program generated using Moongin 
+As long any program generated using Moongin 
 includes an acknowledgement that it was built
-with the following software, and does not imply endorsement, 
-it is compliant with the license:
+with the following software and their licenses, 
+and does not imply endorsement by these projects, 
+it is compliant
 
-- `Moongin`, <https://modula.dev>
-- `SDL`, <https://libsdl.org>
-- `Lua`, <https://lua.org>
+| Asset | License | Link |
+|--|--|--|
+| Moongin | [BSD-3 Clause](https://github.com/JohnAlexINL/moongin/blob/main/LICENSE) | [modula.dev](https://modula.dev) |
+| SDL2 | [zlib](https://libsdl.org/license.php) | [libsdl.org](https://libsdl.org) |
+| Lua | [MIT](https://lua.org/license.html) | [lua.org](https://lua.org) |
+| tinyGL * | [zlib](https://github.com/C-Chads/tinygl/blob/main/LICENSE) | [github.com/C-Chads](https://github.com/C-Chads/tinygl/tree/main) |
+| miniaudio * | Public domain | [miniaud.io](https://miniaud.io/) |
+| `Mono.ttf` | [https://ubuntu.com/legal/font-licence](https://ubuntu.com/legal/font-licence) | [fonts.google.com?query=Dalton+Maag](https://fonts.google.com?query=Dalton+Maag) |
+
+\* not yet actually incorporated in the project,
+may be replaced with something else later
 
 ## Usage
 
@@ -119,4 +170,18 @@ without calling the `destroy` method_
     SDL_SetTextureUserData ? direct manipulating of pixels
     SDL_LockTexture + SDL_UnlockTexture ? possibly needed for texture i/o operations
     SDL_RenderGeometry maybe for adding 3D/hand-rendering
+-->
+
+<!--
+    TODO:
+
+    - Extensions API
+
+    All of following should be *OPTIONAL* and added by includng them
+    with the Moongin Extensions API
+
+    - 3D rendering functions
+    - model loader functions
+    - audio functions
+    - generic API for Achievements
 -->

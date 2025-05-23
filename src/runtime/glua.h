@@ -13,7 +13,19 @@ void glua_subfield_string(lua_State *state, const char *field, const char *value
 void glua_subfield_int(lua_State *state, const char *field, int value);
 void glua_enter_subtable(lua_State *state, const char *field);
 
-// ================================ SDL Functions
+// ================================ ENTITY SYSTEM
+
+int glua_getByIdInt(lua_State *context);
+int glua_getByIdStr(lua_State *context);
+
+// ================================ MAGIC VALUES
+
+list_t *glua_windows;       int tag_windows = 0;
+list_t *glua_renderers;     int tag_renderers = 1;
+list_t *glua_textures;      int tag_textures = 2;
+list_t *glua_fonts;         int tag_fonts = 3;
+
+// ================================ SDL Function Signatures
 
 int glua_newWindow(lua_State *context);
 int glua_newRenderer(lua_State *context);
@@ -35,17 +47,7 @@ int glua_setStyleFont(lua_State *context);
 int glua_renderFontSolid(lua_State *context);
 int glua_renderFontBlended(lua_State *context);
 
-// ================================ ENTITY SYSTEM
-
-int glua_getByIdInt(lua_State *context);
-int glua_getByIdStr(lua_State *context);
-
-// ================================ MAGIC VALUES
-
-list_t *glua_windows;       int tag_windows = 0;
-list_t *glua_renderers;     int tag_renderers = 1;
-list_t *glua_textures;      int tag_textures = 2;
-list_t *glua_fonts;         int tag_fonts = 3;
+// ================================ Error Strings
 
 const char sdls_init_failure[] = "%s (arg %d) initialization failure";
 const char sdls_index_out_of_range[] = "%s (arg %d) index out of range";
